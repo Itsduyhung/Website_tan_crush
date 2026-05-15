@@ -1,0 +1,325 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Fredoka', sans-serif;
+  background-color: #2c3e50;
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+h1 {
+  margin-bottom: 20px;
+  color: #ecf0f1;
+}
+
+/* Background ngôi nhà bằng CSS */
+.game-container {
+  position: relative;
+  background-color: #f5cd79; /* Màu dự phòng */
+  border: 10px solid #8c7ae6; /* Tường nhà */
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  
+  /* Sử dụng ảnh image.png làm background full size */
+  background-image: url('./assets/image.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Neo vị trí mèo (tâm) — bong bóng không bị giới hạn 100px */
+.cat-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.cat-ui-layer {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  max-width: 320px;
+  animation: floatUi 1s ease-in-out infinite alternate;
+  z-index: 12;
+}
+
+@keyframes floatUi {
+  0% { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-5px); }
+}
+
+.cat-body {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  transition: left 0.1s linear, top 0.1s linear;
+  pointer-events: none;
+}
+
+/* Chỉ lật sprite mèo, tránh làm ngược chữ status-text */
+.cat-sprite {
+  width: 100%;
+  height: 100%;
+  transform-origin: bottom center;
+  transform: scaleX(var(--facing));
+  transition: transform 0.2s ease;
+}
+
+/* --- HIỆU ỨNG KHI Ở TRONG ZONE --- */
+
+/* 1. Mèo Đang Ăn (Kitchen) */
+.action-eating {
+  animation: eating 0.5s infinite alternate ease-in-out;
+}
+@keyframes eating {
+  0% { transform: scaleX(var(--facing)) scaleY(1) rotate(0deg); }
+  100% { transform: scaleX(var(--facing)) scaleY(0.85) translateY(15px) rotate(15deg); }
+}
+
+/* 2. Mèo Đang Ngủ (Bedroom) */
+.action-sleeping {
+  animation: sleeping 2s infinite ease-in-out;
+  filter: brightness(0.7) sepia(0.3); /* Tạo hiệu ứng tối đi để ngủ */
+}
+@keyframes sleeping {
+  0%, 100% { transform: scaleX(var(--facing)) scale(1) rotate(0deg); }
+  50% { transform: scaleX(var(--facing)) scale(1.05) rotate(5deg); }
+}
+
+/* 3. Mèo Đang Chơi (Play Area) */
+.action-playing {
+  animation: playing 0.4s infinite alternate;
+}
+@keyframes playing {
+  0% { transform: scaleX(var(--facing)) translateY(0) rotate(-15deg); }
+  100% { transform: scaleX(var(--facing)) translateY(-25px) rotate(15deg); } /* Nhảy nhót loạn xạ */
+}
+
+/* 4. Mèo Đang Xem Phim (Living Room) */
+.action-watching_tv {
+  animation: watching 1s infinite alternate;
+}
+@keyframes watching {
+  0% { transform: scaleX(var(--facing)) scale(1); filter: hue-rotate(0deg) drop-shadow(0 0 10px rgba(30, 144, 255, 0.5)); }
+  100% { transform: scaleX(var(--facing)) scale(1.02); filter: hue-rotate(45deg) drop-shadow(0 0 20px rgba(30, 144, 255, 0.8)); } /* Đổi màu như ánh đèn TV */
+}
+
+/* Text Pop-up trên đầu con mèo */
+.status-text {
+  position: relative;
+  background: white;
+  color: #e74c3c;
+  padding: 5px 11px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  pointer-events: none;
+  border: 2px solid #ff7675;
+}
+.status-text::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: #ff7675 transparent transparent transparent;
+}
+
+.instructions {
+  margin-top: 20px;
+  color: #bdc3c7;
+  font-size: 18px;
+  background: rgba(0,0,0,0.5);
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+/* HUD nhu cầu mèo */
+.need-hud {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 800px;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.need-hud--wanting {
+  border-color: #a29bfe;
+  background: rgba(108, 92, 231, 0.25);
+}
+
+.need-hud--happy {
+  border-color: #55efc4;
+  background: rgba(0, 184, 148, 0.25);
+}
+
+.need-hud--angry {
+  border-color: #ff7675;
+  background: rgba(214, 48, 49, 0.3);
+}
+
+/* Vòng sáng khu cần đến */
+.need-zone-hint {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px dashed #fdcb6e;
+  background: rgba(253, 203, 110, 0.15);
+  pointer-events: none;
+  z-index: 4;
+  animation: needPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes needPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+  50% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+}
+
+/* Icon cảm xúc cạnh mèo */
+.mood-badge {
+  position: absolute;
+  top: 2px;
+  right: -10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 12;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  animation: moodPop 0.35s ease-out;
+}
+
+.mood-badge--wanting {
+  background: #dfe6e9;
+  color: #6c5ce7;
+}
+
+.mood-badge--happy {
+  background: #55efc4;
+  color: #00b894;
+  animation: moodPop 0.35s ease-out, happyBounce 0.6s ease-in-out infinite;
+}
+
+.mood-badge--angry {
+  background: #ff7675;
+  color: #d63031;
+  animation: moodPop 0.35s ease-out, angryShake 0.4s ease-in-out infinite;
+}
+
+@keyframes moodPop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes happyBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes angryShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+/* Thanh đếm ngược */
+.need-timer-bar {
+  position: relative;
+  width: 90px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 11;
+}
+
+.need-timer-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #fdcb6e, #e17055);
+  border-radius: 4px;
+  transform-origin: left center;
+  animation: timerDrain linear forwards;
+}
+
+@keyframes timerDrain {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* Bong bóng theo trạng thái */
+.status-text--wanting {
+  border-color: #a29bfe;
+  color: #6c5ce7;
+  white-space: nowrap;
+}
+
+.status-text--wanting::after {
+  border-color: #a29bfe transparent transparent transparent;
+}
+
+.status-text--happy {
+  border-color: #00b894;
+  color: #00b894;
+}
+
+.status-text--happy::after {
+  border-color: #00b894 transparent transparent transparent;
+}
+
+.status-text--angry {
+  border-color: #d63031;
+  color: #d63031;
+}
+
+.status-text--angry::after {
+  border-color: #d63031 transparent transparent transparent;
+}
+
+.cat-sprite.mood-angry {
+  animation: angryCat 0.25s ease-in-out infinite;
+}
+
+.cat-sprite.mood-happy {
+  filter: sepia(0.2) saturate(1.4) hue-rotate(10deg) brightness(1.1);
+}
+
+@keyframes angryCat {
+  0%, 100% { transform: scaleX(var(--facing)) translateX(0); }
+  50% { transform: scaleX(var(--facing)) translateX(3px); }
+}

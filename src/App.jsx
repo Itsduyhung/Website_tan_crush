@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Lottie from 'lottie-react';
 import { Smile, Angry, Brain } from 'lucide-react';
+import catAnimation from './cat.json';
+
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const CAT_SIZE = 100;
@@ -42,7 +44,6 @@ export default function App() {
   const [activeZone, setActiveZone] = useState(null);
   const [needPhase, setNeedPhase] = useState('idle'); // idle | wanting | happy | angry
   const [currentNeed, setCurrentNeed] = useState(null);
-  const [catAnimation, setCatAnimation] = useState(null);
 
   const lottieRef = useRef(null);
   const moodTimerRef = useRef(null);
@@ -81,16 +82,6 @@ export default function App() {
     if (moodTimerRef.current) clearTimeout(moodTimerRef.current);
     moodTimerRef.current = setTimeout(() => resetToIdle(), MOOD_DISPLAY_MS);
   }, [resetToIdle]);
-
-  useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}cat.json`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load cat animation');
-        return res.json();
-      })
-      .then(setCatAnimation)
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     scheduleNextNeed(NEED_SPAWN_DELAY);
@@ -205,8 +196,8 @@ export default function App() {
           : activeZone?.text;
 
   return (
-    <>
-      <h1>Ngôi Nhà Của Mèo Lottie 🏠</h1>
+    <div className="app-layout">
+      <h1>Ngôi Nhà Của Mèo Leora 🏠</h1>
 
       <div className={`need-hud need-hud--${needPhase}`}>
         {needPhase === 'idle' && <span>Chờ mèo nghĩ ra nhu cầu tiếp theo...</span>}
@@ -276,18 +267,16 @@ export default function App() {
             className={`cat-sprite ${activeZone ? `action-${activeZone.action}` : ''} ${needPhase === 'angry' ? 'mood-angry' : ''} ${needPhase === 'happy' ? 'mood-happy' : ''}`}
             style={{ '--facing': direction }}
           >
-            {catAnimation ? (
-              <Lottie 
-                lottieRef={lottieRef}
-                animationData={catAnimation} 
-                loop={true} 
-                style={{ 
-                  width: '100%', 
-                  height: '100%',
-                  filter: 'sepia(1) saturate(300%) hue-rotate(-15deg) brightness(1.05)'
-                }}
-              />
-            ) : null}
+            <Lottie 
+              lottieRef={lottieRef}
+              animationData={catAnimation} 
+              loop={true} 
+              style={{ 
+                width: '100%', 
+                height: '100%',
+                filter: 'sepia(1) saturate(300%) hue-rotate(-15deg) brightness(1.05)'
+              }}
+            />
           </div>
           </div>
         </div>
@@ -296,6 +285,6 @@ export default function App() {
       <p className="instructions">
         Dùng <b>W, A, S, D</b> để di chuyển mèo. Đọc suy nghĩ của mèo, đưa tới đúng khu vực trước khi hết thời gian — đúng thì <b>vui</b>, trễ thì <b>giận</b>!
       </p>
-    </>
+    </div>
   );
 }

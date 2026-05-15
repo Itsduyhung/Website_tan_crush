@@ -2,54 +2,47 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Lottie from 'lottie-react';
 import { Smile, Angry, Brain } from 'lucide-react';
 import catAnimation from './cat.json';
+import {
+  GAME_WIDTH,
+  GAME_HEIGHT,
+  CAT_SIZE,
+  STEP,
+  NEED_SPAWN_DELAY,
+  NEED_TIMEOUT,
+  MOOD_DISPLAY_MS,
+  MISSIONS_REQUIRED,
+  ZONES,
+  pickRandomNeed,
+} from './gameConfig';
+import MissionPanel from './components/MissionPanel';
+import DrinkRewardScreen from './components/DrinkRewardScreen';
 
-const GAME_WIDTH = 800;
-const GAME_HEIGHT = 600;
-const CAT_SIZE = 100;
-const STEP = 20;
+function updateMissionsOnSuccess(prev, zoneId) {
+  const next = [...prev];
+  const zoneMission = MISSIONS.find((m) => m.zoneId === zoneId && !next.includes(m.id));
+  if (zoneMission) next.push(zoneMission.id);
 
-const NEED_SPAWN_DELAY = 4000;
-const NEED_TIMEOUT = 14000;
-const MOOD_DISPLAY_MS = 3200;
+  const firstFourDone = [1, 2, 3, 4].every((id) => next.includes(id));
+  if (firstFourDone && !next.includes(5)) next.push(5);
 
-const ZONES = [
-  { id: 'kitchen', x: 150, y: 150, action: 'eating', text: 'Măm măm 🐟' },
-  { id: 'play_area', x: 650, y: 150, action: 'playing', text: 'Chơi đùa nàoo 🧶' },
-  { id: 'living_room', x: 150, y: 450, action: 'watching_tv', text: 'Coi phim thui 📺' },
-  { id: 'bedroom', x: 650, y: 450, action: 'sleeping', text: 'Zzz... 💤' }
-];
-
-const CAT_NEEDS = [
-  { zoneId: 'kitchen', thought: 'Đói! → Bếp ăn', hint: 'Đói bụng quá — đưa tớ đến bếp ăn!' },
-  { zoneId: 'play_area', thought: 'Chơi đi! → Khu vui chơi', hint: 'Muốn chơi đùa — đến khu vui chơi nhé!' },
-  { zoneId: 'living_room', thought: 'TV đi! → Phòng khách', hint: 'Nhàm chán — coi TV ở phòng khách!' },
-  { zoneId: 'bedroom', thought: 'Ngủ! → Giường', hint: 'Buồn ngủ rồi — đưa tớ lên giường!' }
-];
-
-function pickRandomNeed(excludeZoneId = null) {
-  const pool = excludeZoneId
-    ? CAT_NEEDS.filter((n) => n.zoneId !== excludeZoneId)
-    : CAT_NEEDS;
-  return pool[Math.floor(Math.random() * pool.length)];
+  return next;
 }
 
 export default function App() {
-  // Tọa độ là tâm điểm của mèo
-  const [position, setPosition] = useState({
-    x: GAME_WIDTH / 2,
-    y: GAME_HEIGHT / 2
-  });
-  
+  const [screen, setScreen] = useState('game');
+  const [position, setPosition] = useState({ x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 });
   const [direction, setDirection] = useState(1);
   const [activeZone, setActiveZone] = useState(null);
-  const [needPhase, setNeedPhase] = useState('idle'); // idle | wanting | happy | angry
+  const [needPhase, setNeedPhase] = useState('idle');
   const [currentNeed, setCurrentNeed] = useState(null);
+  const [completedMissionIds, setCompletedMissionIds] = useState([]);
 
   const lottieRef = useRef(null);
   const moodTimerRef = useRef(null);
   const spawnTimerRef = useRef(null);
   const timeoutTimerRef = useRef(null);
   const lastNeedZoneRef = useRef(null);
+  const rewardScheduledRef = useRef(false);
 
   const clearMoodTimers = useCallback(() => {
     if (moodTimerRef.current) clearTimeout(moodTimerRef.current);
@@ -76,31 +69,63 @@ export default function App() {
     scheduleNextNeed(nextDelay);
   }, [scheduleNextNeed]);
 
-  const showMoodThenReset = useCallback((mood) => {
-    if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
-    setNeedPhase(mood);
-    if (moodTimerRef.current) clearTimeout(moodTimerRef.current);
-    moodTimerRef.current = setTimeout(() => resetToIdle(), MOOD_DISPLAY_MS);
-  }, [resetToIdle]);
+  const showMoodThenReset = useCallback(
+    (mood, zoneId) => {
+      if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
+
+      if (mood === 'happy' && zoneId) {
+        setCompletedMissionIds((prev) => {
+          const next = updateMissionsOnSuccess(prev, zoneId);
+          if (next.length >= MISSIONS_REQUIRED && prev.length < MISSIONS_REQUIRED && !rewardScheduledRef.current) {
+            rewardScheduledRef.current = true;
+            setTimeout(() => setScreen('reward'), MOOD_DISPLAY_MS);
+          }
+          return next;
+        });
+      }
+
+      setNeedPhase(mood);
+      if (moodTimerRef.current) clearTimeout(moodTimerRef.current);
+      moodTimerRef.current = setTimeout(() => resetToIdle(), MOOD_DISPLAY_MS);
+    },
+    [resetToIdle]
+  );
+
+  const handlePlayAgain = () => {
+    clearMoodTimers();
+    rewardScheduledRef.current = false;
+    setScreen('game');
+    setCompletedMissionIds([]);
+    setPosition({ x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 });
+    setDirection(1);
+    setActiveZone(null);
+    setNeedPhase('idle');
+    setCurrentNeed(null);
+    lastNeedZoneRef.current = null;
+    scheduleNextNeed(NEED_SPAWN_DELAY);
+  };
 
   useEffect(() => {
+    if (screen !== 'game') return undefined;
     scheduleNextNeed(NEED_SPAWN_DELAY);
     return () => clearMoodTimers();
-  }, [scheduleNextNeed, clearMoodTimers]);
+  }, [screen, scheduleNextNeed, clearMoodTimers]);
 
   useEffect(() => {
-    if (needPhase !== 'wanting' || !currentNeed) return;
+    if (screen !== 'game' || needPhase !== 'wanting' || !currentNeed) return undefined;
 
     timeoutTimerRef.current = setTimeout(() => {
-      showMoodThenReset('angry');
+      showMoodThenReset('angry', null);
     }, NEED_TIMEOUT);
 
     return () => {
       if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
     };
-  }, [needPhase, currentNeed, showMoodThenReset]);
+  }, [screen, needPhase, currentNeed, showMoodThenReset]);
 
   useEffect(() => {
+    if (screen !== 'game') return undefined;
+
     const handleKeyDown = (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
         e.preventDefault();
@@ -137,7 +162,6 @@ export default function App() {
             break;
         }
 
-        // Chặn biên
         if (newX < CAT_SIZE / 2) newX = CAT_SIZE / 2;
         if (newX > GAME_WIDTH - CAT_SIZE / 2) newX = GAME_WIDTH - CAT_SIZE / 2;
         if (newY < CAT_SIZE / 2) newY = CAT_SIZE / 2;
@@ -149,16 +173,15 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [screen]);
 
-  // Xử lý logic mỗi khi mèo di chuyển (Kiểm tra xem mèo có vào Zone không)
   useEffect(() => {
+    if (screen !== 'game') return;
+
     let currentZone = null;
-    
     for (const zone of ZONES) {
-      // Tính khoảng cách từ tâm mèo đến tâm zone (Hypotenuse)
       const distance = Math.hypot(position.x - zone.x, position.y - zone.y);
-      if (distance < 85) { // Bán kính nhận diện
+      if (distance < 85) {
         currentZone = zone;
         break;
       }
@@ -166,25 +189,27 @@ export default function App() {
 
     setActiveZone(currentZone);
 
-    // Tương tác trực tiếp với Lottie (Ví dụ: Đổi tốc độ phát)
     if (lottieRef.current) {
       if (currentZone?.action === 'playing') {
-        lottieRef.current.setSpeed(2); // Chơi thì tua nhanh gấp đôi
+        lottieRef.current.setSpeed(2);
       } else if (currentZone?.action === 'sleeping') {
-        lottieRef.current.setSpeed(0.5); // Ngủ thì thở chậm lại
+        lottieRef.current.setSpeed(0.35);
       } else {
-        lottieRef.current.setSpeed(1); // Bình thường
+        lottieRef.current.setSpeed(1);
       }
     }
-
-  }, [position]);
+  }, [screen, position]);
 
   useEffect(() => {
-    if (needPhase !== 'wanting' || !currentNeed || !activeZone) return;
+    if (screen !== 'game' || needPhase !== 'wanting' || !currentNeed || !activeZone) return;
     if (activeZone.id === currentNeed.zoneId) {
-      showMoodThenReset('happy');
+      showMoodThenReset('happy', activeZone.id);
     }
-  }, [needPhase, currentNeed, activeZone, showMoodThenReset]);
+  }, [screen, needPhase, currentNeed, activeZone, showMoodThenReset]);
+
+  if (screen === 'reward') {
+    return <DrinkRewardScreen onPlayAgain={handlePlayAgain} />;
+  }
 
   const bubbleText =
     needPhase === 'wanting'
@@ -195,96 +220,116 @@ export default function App() {
           ? 'Giận rồi!'
           : activeZone?.text;
 
+  const isSleeping = activeZone?.action === 'sleeping';
+
   return (
     <div className="app-layout">
       <h1>Ngôi Nhà Của Mèo Leora 🏠</h1>
 
-      <div className={`need-hud need-hud--${needPhase}`}>
-        {needPhase === 'idle' && <span>Chờ mèo nghĩ ra nhu cầu tiếp theo...</span>}
-        {needPhase === 'wanting' && (
-          <>
-            <Brain size={20} />
-            <span><b>Mèo đang muốn:</b> {currentNeed?.hint ?? currentNeed?.thought}</span>
-          </>
-        )}
-        {needPhase === 'happy' && (
-          <>
-            <Smile size={20} />
-            <span>Đáp ứng đúng — mèo rất vui!</span>
-          </>
-        )}
-        {needPhase === 'angry' && (
-          <>
-            <Angry size={20} />
-            <span>Đợi quá lâu — mèo giận rồi!</span>
-          </>
-        )}
-      </div>
+      <div className="game-main">
+        <MissionPanel completedIds={completedMissionIds} />
 
-      <div 
-        className="game-container" 
-        style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}
-      >
-        {needPhase === 'wanting' && currentNeed && ZONES.filter((z) => z.id === currentNeed.zoneId).map((z) => (
-          <div key={z.id} className="need-zone-hint" style={{ left: z.x, top: z.y }} />
-        ))}
+        <div className="game-column">
+          <div className={`need-hud need-hud--${needPhase}`}>
+            {needPhase === 'idle' && <span>Chờ mèo nghĩ ra nhu cầu tiếp theo...</span>}
+            {needPhase === 'wanting' && (
+              <>
+                <Brain size={20} />
+                <span>
+                  <b>Mèo đang muốn:</b> {currentNeed?.hint ?? currentNeed?.thought}
+                </span>
+              </>
+            )}
+            {needPhase === 'happy' && (
+              <>
+                <Smile size={20} />
+                <span>Đáp ứng đúng — mèo rất vui!</span>
+              </>
+            )}
+            {needPhase === 'angry' && (
+              <>
+                <Angry size={20} />
+                <span>Đợi quá lâu — mèo giận rồi!</span>
+              </>
+            )}
+          </div>
 
-        <div 
-          className="cat-anchor"
-          style={{
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-          }}
-        >
-          {(bubbleText || needPhase === 'wanting') && (
-            <div className="cat-ui-layer">
-              {needPhase === 'wanting' && (
-                <div className="need-timer-bar" key={currentNeed?.zoneId}>
-                  <div
-                    className="need-timer-fill"
-                    style={{ animationDuration: `${NEED_TIMEOUT}ms` }}
-                  />
-                </div>
-              )}
-              {bubbleText && (
-                <div className={`status-text status-text--${needPhase === 'idle' ? 'zone' : needPhase}`}>
-                  {bubbleText}
-                </div>
-              )}
-            </div>
-          )}
+          <div className="game-container" style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}>
+            {isSleeping && <div className="sleep-overlay" aria-hidden />}
 
-          <div className="cat-body">
-          {needPhase !== 'idle' && (
-            <div className={`mood-badge mood-badge--${needPhase}`}>
-              {needPhase === 'wanting' && <Brain size={22} strokeWidth={2.5} />}
-              {needPhase === 'happy' && <Smile size={22} strokeWidth={2.5} />}
-              {needPhase === 'angry' && <Angry size={22} strokeWidth={2.5} />}
-            </div>
-          )}
+            {needPhase === 'wanting' &&
+              currentNeed &&
+              ZONES.filter((z) => z.id === currentNeed.zoneId).map((z) => (
+                <div key={z.id} className="need-zone-hint" style={{ left: z.x, top: z.y }} />
+              ))}
 
             <div
-            className={`cat-sprite ${activeZone ? `action-${activeZone.action}` : ''} ${needPhase === 'angry' ? 'mood-angry' : ''} ${needPhase === 'happy' ? 'mood-happy' : ''}`}
-            style={{ '--facing': direction }}
-          >
-            <Lottie 
-              lottieRef={lottieRef}
-              animationData={catAnimation} 
-              loop={true} 
-              style={{ 
-                width: '100%', 
-                height: '100%',
-                filter: 'sepia(1) saturate(300%) hue-rotate(-15deg) brightness(1.05)'
-              }}
-            />
+              className="cat-anchor"
+              style={{ left: `${position.x}px`, top: `${position.y}px` }}
+            >
+              {(bubbleText || needPhase === 'wanting') && (
+                <div className="cat-ui-layer">
+                  {needPhase === 'wanting' && (
+                    <div className="need-timer-bar" key={currentNeed?.zoneId}>
+                      <div
+                        className="need-timer-fill"
+                        style={{ animationDuration: `${NEED_TIMEOUT}ms` }}
+                      />
+                    </div>
+                  )}
+                  {bubbleText && (
+                    <div
+                      className={`status-text status-text--${needPhase === 'idle' ? 'zone' : needPhase}`}
+                    >
+                      {bubbleText}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="cat-body">
+                {needPhase !== 'idle' && (
+                  <div className={`mood-badge mood-badge--${needPhase}`}>
+                    {needPhase === 'wanting' && <Brain size={22} strokeWidth={2.5} />}
+                    {needPhase === 'happy' && <Smile size={22} strokeWidth={2.5} />}
+                    {needPhase === 'angry' && <Angry size={22} strokeWidth={2.5} />}
+                  </div>
+                )}
+
+                {isSleeping && (
+                  <div className="sleep-zzz" aria-hidden>
+                    <span className="zzz zzz-1">Z</span>
+                    <span className="zzz zzz-2">z</span>
+                    <span className="zzz zzz-3">Z</span>
+                  </div>
+                )}
+
+                <div
+                  className={`cat-sprite ${activeZone ? `action-${activeZone.action}` : ''} ${needPhase === 'angry' ? 'mood-angry' : ''} ${needPhase === 'happy' ? 'mood-happy' : ''}`}
+                  style={{ '--facing': direction }}
+                >
+                  <Lottie
+                    lottieRef={lottieRef}
+                    animationData={catAnimation}
+                    loop
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      filter:
+                        'sepia(0.15) saturate(1.2) hue-rotate(5deg) brightness(1.08)',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          </div>
+
+          <p className="instructions">
+            Dùng <b>W, A, S, D</b> để di chuyển mèo. Hoàn thành <b>5 nhiệm vụ</b> để mở màn hình
+            chọn đồ uống thưởng!
+          </p>
         </div>
       </div>
-
-      <p className="instructions">
-        Dùng <b>W, A, S, D</b> để di chuyển mèo. Đọc suy nghĩ của mèo, đưa tới đúng khu vực trước khi hết thời gian — đúng thì <b>vui</b>, trễ thì <b>giận</b>!
-      </p>
     </div>
   );
 }

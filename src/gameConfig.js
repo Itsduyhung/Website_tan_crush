@@ -29,6 +29,12 @@ export const MISSIONS = [
   { id: 5, title: 'Làm Leora vui thêm', desc: 'Hoàn thành thêm 1 nhu cầu', zoneId: null, icon: '⭐' },
 ];
 
+/** Ngày hiển thị trong hộp quà — đổi theo dịp bạn muốn */
+export const GIFT_SURPRISE_DATE = '20/10/2026';
+
+export const GIFT_LETTER_MESSAGE =
+  'Bạn sẽ nhận được một người bạn nhỏ để trò chuyện vào dịp này. Đây là món bất ngờ của chủ nhà bà Leora tặng bạn. Trân trọng!';
+
 export const DRINKS = [
   { id: 'matcha', name: 'Matcha Latte', emoji: '🍵', desc: 'Thanh mát, béo nhẹ' },
   { id: 'latte', name: 'Latte', emoji: '☕', desc: 'Sữa nóng, thơm cà phê' },

@@ -248,7 +248,11 @@ export default function App() {
             {needPhase === 'wanting' &&
               currentNeed &&
               ZONES.filter((z) => z.id === currentNeed.zoneId).map((z) => (
-                <div key={z.id} className="need-zone-hint" style={{ left: z.x, top: z.y }} />
+                <div
+                  key={z.id}
+                  className={`need-zone-hint ${z.id === 'kitchen' ? 'need-zone-hint--kitchen' : ''}`}
+                  style={{ left: z.x, top: z.y }}
+                />
               ))}
 
             <div
@@ -313,8 +317,7 @@ export default function App() {
           </div>
 
           <p className="instructions">
-            Dùng <b>W, A, S, D</b> để di chuyển mèo. Hoàn thành <b>5 nhiệm vụ</b> để mở màn hình
-            chọn đồ uống thưởng!
+            Dùng <b>W, A, S, D</b> để di chuyển mèo. Hoàn thành <b>5 nhiệm vụ</b> để mở hộp quà bất ngờ!
           </p>
         </div>
     </div>

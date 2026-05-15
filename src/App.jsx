@@ -14,19 +14,8 @@ import {
   ZONES,
   pickRandomNeed,
 } from './gameConfig';
-import MissionPanel from './components/MissionPanel';
+import MissionMini from './components/MissionMini';
 import DrinkRewardScreen from './components/DrinkRewardScreen';
-
-function updateMissionsOnSuccess(prev, zoneId) {
-  const next = [...prev];
-  const zoneMission = MISSIONS.find((m) => m.zoneId === zoneId && !next.includes(m.id));
-  if (zoneMission) next.push(zoneMission.id);
-
-  const firstFourDone = [1, 2, 3, 4].every((id) => next.includes(id));
-  if (firstFourDone && !next.includes(5)) next.push(5);
-
-  return next;
-}
 
 export default function App() {
   const [screen, setScreen] = useState('game');
@@ -35,7 +24,7 @@ export default function App() {
   const [activeZone, setActiveZone] = useState(null);
   const [needPhase, setNeedPhase] = useState('idle');
   const [currentNeed, setCurrentNeed] = useState(null);
-  const [completedMissionIds, setCompletedMissionIds] = useState([]);
+  const [missionCount, setMissionCount] = useState(0);
 
   const lottieRef = useRef(null);
   const moodTimerRef = useRef(null);
@@ -73,10 +62,10 @@ export default function App() {
     (mood, zoneId) => {
       if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
 
-      if (mood === 'happy' && zoneId) {
-        setCompletedMissionIds((prev) => {
-          const next = updateMissionsOnSuccess(prev, zoneId);
-          if (next.length >= MISSIONS_REQUIRED && prev.length < MISSIONS_REQUIRED && !rewardScheduledRef.current) {
+      if (mood === 'happy') {
+        setMissionCount((prev) => {
+          const next = Math.min(prev + 1, MISSIONS_REQUIRED);
+          if (next >= MISSIONS_REQUIRED && prev < MISSIONS_REQUIRED && !rewardScheduledRef.current) {
             rewardScheduledRef.current = true;
             setTimeout(() => setScreen('reward'), MOOD_DISPLAY_MS);
           }
@@ -95,7 +84,7 @@ export default function App() {
     clearMoodTimers();
     rewardScheduledRef.current = false;
     setScreen('game');
-    setCompletedMissionIds([]);
+    setMissionCount(0);
     setPosition({ x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 });
     setDirection(1);
     setActiveZone(null);
@@ -226,10 +215,7 @@ export default function App() {
     <div className="app-layout">
       <h1>Ngôi Nhà Của Mèo Leora 🏠</h1>
 
-      <div className="game-main">
-        <MissionPanel completedIds={completedMissionIds} />
-
-        <div className="game-column">
+      <div className="game-column">
           <div className={`need-hud need-hud--${needPhase}`}>
             {needPhase === 'idle' && <span>Chờ mèo nghĩ ra nhu cầu tiếp theo...</span>}
             {needPhase === 'wanting' && (
@@ -255,6 +241,8 @@ export default function App() {
           </div>
 
           <div className="game-container" style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}>
+            <MissionMini count={missionCount} />
+
             {isSleeping && <div className="sleep-overlay" aria-hidden />}
 
             {needPhase === 'wanting' &&
@@ -316,7 +304,7 @@ export default function App() {
                       width: '100%',
                       height: '100%',
                       filter:
-                        'sepia(0.15) saturate(1.2) hue-rotate(5deg) brightness(1.08)',
+                        'sepia(0.45) saturate(1.8) hue-rotate(8deg) brightness(1.2) contrast(1.02)',
                     }}
                   />
                 </div>
@@ -329,7 +317,6 @@ export default function App() {
             chọn đồ uống thưởng!
           </p>
         </div>
-      </div>
     </div>
   );
 }

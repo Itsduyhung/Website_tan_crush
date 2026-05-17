@@ -67,7 +67,7 @@ export const GIFTS = [
   { id: 'teddy', name: 'Gấu bông', desc: 'Ôm ấm, dễ thương không lối thoát' },
   {
     id: 'mystery',
-    name: 'Phần quà bí ẩn',
+    name: 'Phần quà bí ẩn được gửi từ tương lai vào dịp đặc biệt',
     desc: 'Được gửi từ tương lai vào dịp đặc biệt',
     textOnly: true,
   },

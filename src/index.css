@@ -435,7 +435,8 @@ h1 {
 .move-pad {
   position: absolute;
   right: 10px;
-  bottom: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   display: grid;
   grid-template-columns: 34px 34px 34px;
   grid-template-rows: 34px 34px 34px;

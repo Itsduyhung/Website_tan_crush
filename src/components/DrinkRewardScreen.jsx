@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Confetti from 'react-confetti';
 import { GIFTS } from '../gameConfig';
 import giftMascot from '../assets/gift-mascot.png';
 import giftCake from '../assets/gift-cake.png';
 import giftJuice from '../assets/gift-juice.png';
 import giftTeddy from '../assets/gift-teddy.png';
+import giftMysteryImg from '../assets/gift-mystery.jpg';
 
 const GIFT_IMAGES = {
   cake: giftCake,
@@ -18,10 +19,30 @@ function getThanksMessage(name) {
   return `Cảm ơn ${name} vì đã giúp mình bé mèo lúc mình đi vắng. Để đền đáp sự chân thành này mình có chút lòng thành muốn gửi tặng ${name}`;
 }
 
+function getGiftNumberLabel(gift) {
+  if (!gift) return 'Phần quà';
+  if (gift.id === 'cake') return 'Phần quà 1';
+  if (gift.id === 'teddy') return 'Phần quà 2';
+  if (gift.id === 'juice') return 'Phần quà 3';
+  return 'Phần quà';
+}
+
 function GiftRevealContent({ gift }) {
   return (
-    <div className="gift-reveal gift-reveal--simple">
-      <strong className="gift-reveal__name">{gift.name}</strong>
+    <div className="gift-reveal gift-reveal--double">
+      <div className="gift-reveal__images">
+        <div className="gift-reveal__thumb">
+          <img src={GIFT_IMAGES[gift.id]} alt={gift.name} />
+          <p className="gift-reveal__image-label">{gift.name}</p>
+        </div>
+        <div className="gift-reveal__thumb">
+          <img src={giftMysteryImg} alt="Món quà bí ẩn" />
+          <p className="gift-reveal__image-label">Món quà bí ẩn</p>
+        </div>
+      </div>
+      <p className="gift-reveal__desc">
+        {gift.name} + 1 phần quà bí ẩn được tặng trong sự kiện tương lai
+      </p>
     </div>
   );
 }
@@ -105,7 +126,6 @@ export default function DrinkRewardScreen({ onPlayAgain }) {
           </aside>
 
           <div className="gift-pick-content">
-            <p className="reward-screen__badge">Phần thưởng</p>
 
             {!selected ? (
               <>
@@ -125,18 +145,14 @@ export default function DrinkRewardScreen({ onPlayAgain }) {
                         className={`gift-box gift-box--pick ${isOpening ? 'gift-box--opening' : ''} ${isDisabled ? 'gift-box--disabled' : ''}`}
                         onClick={() => openBox(gift)}
                         disabled={isDisabled}
-                        aria-label={`Mở hộp quà ${gift.name}`}
+                        aria-label={`Mở hộp quà ${getGiftNumberLabel(gift)}`}
                       >
                         <span className="gift-box__ribbon">🎀</span>
                         <span className="gift-box__lid" />
-                        <span className={`gift-box__body ${GIFT_IMAGES[gift.id] ? 'gift-box__body--image' : ''}`}>
-                          {GIFT_IMAGES[gift.id] ? (
-                            <img src={GIFT_IMAGES[gift.id]} alt={gift.name} />
-                          ) : (
-                            <span className="gift-box__emoji">🎁</span>
-                          )}
+                        <span className="gift-box__body">
+                          <span className="gift-box__emoji">🎁</span>
                         </span>
-                        <span className="gift-box__label">{gift.name}</span>
+                        <span className="gift-box__label">{getGiftNumberLabel(gift)}</span>
                       </button>
                     );
                   })}
@@ -146,13 +162,13 @@ export default function DrinkRewardScreen({ onPlayAgain }) {
               <div className="gift-phase gift-phase--revealed">
                 <div className="gift-box gift-box--pick gift-box--open gift-box--revealed">
                   <span className="gift-box__lid gift-box__lid--open" />
-                  <span className="gift-box__body gift-box__body--open">
+                  <div className="gift-box__body gift-box__body--open">
                     <GiftRevealContent gift={selected} />
-                  </span>
+                  </div>
                 </div>
 
                 <p className="reward-screen__chosen">
-                  {displayName} đã chọn món quà "{selected.name}"
+                  {displayName} đã chọn {getGiftNumberLabel(selected)}
                 </p>
                 <button type="button" className="reward-screen__btn" onClick={onPlayAgain}>
                   Chơi lại từ đầu

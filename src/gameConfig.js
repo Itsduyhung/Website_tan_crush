@@ -5,7 +5,7 @@ export const STEP = 20;
 export const NEED_SPAWN_DELAY = 4000;
 export const NEED_TIMEOUT = 14000;
 export const MOOD_DISPLAY_MS = 3200;
-export const MISSIONS_REQUIRED = 5;
+export const MISSIONS_REQUIRED = 6;
 
 export const ZONES = [
   { id: 'kitchen', x: 142, y: 218, action: 'eating', text: 'Măm măm 🐟' },
@@ -65,12 +65,6 @@ export const GIFTS = [
   { id: 'cake', name: 'Bánh kem', desc: 'Ngọt ngào, tan chảy trong miệng' },
   { id: 'juice', name: 'Nước trái cây', desc: 'Mát lạnh, đầy vitamin' },
   { id: 'teddy', name: 'Gấu bông', desc: 'Ôm ấm, dễ thương không lối thoát' },
-  {
-    id: 'mystery',
-    name: 'Phần quà bí ẩn được gửi từ tương lai vào dịp đặc biệt',
-    desc: 'Được gửi từ tương lai vào dịp đặc biệt',
-    textOnly: true,
-  },
 ];
 
 export function pickRandomNeed(excludeZoneId = null) {

@@ -1,9 +1,23 @@
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Music } from 'lucide-react';
 
-export default function MovePad({ onMove }) {
+export default function MovePad({
+  onMove,
+  musicStarted,
+  musicPlaying,
+  startMusic,
+  toggleMusic,
+}) {
   const handle = (dx, dy) => (e) => {
     e.preventDefault();
     onMove(dx, dy);
+  };
+
+  const handleMusicClick = () => {
+    if (!musicStarted) {
+      startMusic();
+    } else {
+      toggleMusic();
+    }
   };
 
   return (
@@ -23,6 +37,15 @@ export default function MovePad({ onMove }) {
         aria-label="Di chuyển trái"
       >
         <ChevronLeft size={22} strokeWidth={2.5} />
+      </button>
+      <button
+        type="button"
+        className="move-pad__btn move-pad__btn--music"
+        onClick={handleMusicClick}
+        aria-label={musicPlaying ? 'Tắt nhạc' : 'Bật nhạc'}
+        title={musicPlaying ? 'Tắt nhạc' : 'Bật nhạc'}
+      >
+        <Music size={20} strokeWidth={2.5} />
       </button>
       <button
         type="button"

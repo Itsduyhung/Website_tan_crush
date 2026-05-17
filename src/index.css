@@ -441,7 +441,7 @@ h1 {
   grid-template-rows: 34px 34px 34px;
   grid-template-areas:
     ". up ."
-    "left . right"
+    "left music right"
     ". down .";
   gap: 8px;
   padding: 0;
@@ -474,6 +474,7 @@ h1 {
 
 .move-pad__btn--up { grid-area: up; }
 .move-pad__btn--left { grid-area: left; }
+.move-pad__btn--music { grid-area: music; }
 .move-pad__btn--right { grid-area: right; }
 .move-pad__btn--down { grid-area: down; }
 

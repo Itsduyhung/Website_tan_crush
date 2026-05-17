@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Lottie from 'lottie-react';
 import { Smile, Angry, Brain } from 'lucide-react';
 import catAnimation from './cat.json';
+import musicFile from './assets/flowers-happy-piano-sentimental-soundaudio.mp3';
 import {
   GAME_WIDTH,
   GAME_HEIGHT,
@@ -33,6 +34,44 @@ export default function App() {
   const timeoutTimerRef = useRef(null);
   const lastNeedZoneRef = useRef(null);
   const rewardScheduledRef = useRef(false);
+  const audioRef = useRef(null);
+  const [musicStarted, setMusicStarted] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+
+  useEffect(() => {
+    const audio = new Audio(musicFile);
+    audio.loop = true;
+    audio.volume = 0.35;
+    audioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
+  const startMusic = useCallback(() => {
+    if (!audioRef.current) return;
+    audioRef.current
+      .play()
+      .then(() => {
+        setMusicStarted(true);
+        setMusicPlaying(true);
+      })
+      .catch(() => {
+        setMusicStarted(false);
+      });
+  }, []);
+
+  const toggleMusic = useCallback(() => {
+    if (!audioRef.current) return;
+    if (musicPlaying) {
+      audioRef.current.pause();
+      setMusicPlaying(false);
+      return;
+    }
+    audioRef.current.play().then(() => setMusicPlaying(true));
+  }, [musicPlaying]);
 
   const clearMoodTimers = useCallback(() => {
     if (moodTimerRef.current) clearTimeout(moodTimerRef.current);
@@ -319,7 +358,13 @@ export default function App() {
               </div>
             </div>
 
-            <MovePad onMove={moveCat} />
+            <MovePad
+              onMove={moveCat}
+              musicStarted={musicStarted}
+              musicPlaying={musicPlaying}
+              startMusic={startMusic}
+              toggleMusic={toggleMusic}
+            />
           </div>
 
           <p className="instructions">

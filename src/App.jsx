@@ -16,6 +16,7 @@ import {
 } from './gameConfig';
 import MissionMini from './components/MissionMini';
 import DrinkRewardScreen from './components/DrinkRewardScreen';
+import MovePad from './components/MovePad';
 
 export default function App() {
   const [screen, setScreen] = useState('game');
@@ -80,6 +81,23 @@ export default function App() {
     [resetToIdle]
   );
 
+  const moveCat = useCallback((dx, dy) => {
+    setPosition((prev) => {
+      let newX = prev.x + dx * STEP;
+      let newY = prev.y + dy * STEP;
+
+      if (dx < 0) setDirection(-1);
+      if (dx > 0) setDirection(1);
+
+      if (newX < CAT_SIZE / 2) newX = CAT_SIZE / 2;
+      if (newX > GAME_WIDTH - CAT_SIZE / 2) newX = GAME_WIDTH - CAT_SIZE / 2;
+      if (newY < CAT_SIZE / 2) newY = CAT_SIZE / 2;
+      if (newY > GAME_HEIGHT - CAT_SIZE / 2) newY = GAME_HEIGHT - CAT_SIZE / 2;
+
+      return { x: newX, y: newY };
+    });
+  }, []);
+
   const handlePlayAgain = () => {
     clearMoodTimers();
     rewardScheduledRef.current = false;
@@ -120,49 +138,35 @@ export default function App() {
         e.preventDefault();
       }
 
-      setPosition((prev) => {
-        let newX = prev.x;
-        let newY = prev.y;
-
-        switch (e.key) {
-          case 'ArrowUp':
-          case 'w':
-          case 'W':
-            newY -= STEP;
-            break;
-          case 'ArrowDown':
-          case 's':
-          case 'S':
-            newY += STEP;
-            break;
-          case 'ArrowLeft':
-          case 'a':
-          case 'A':
-            newX -= STEP;
-            setDirection(-1);
-            break;
-          case 'ArrowRight':
-          case 'd':
-          case 'D':
-            newX += STEP;
-            setDirection(1);
-            break;
-          default:
-            break;
-        }
-
-        if (newX < CAT_SIZE / 2) newX = CAT_SIZE / 2;
-        if (newX > GAME_WIDTH - CAT_SIZE / 2) newX = GAME_WIDTH - CAT_SIZE / 2;
-        if (newY < CAT_SIZE / 2) newY = CAT_SIZE / 2;
-        if (newY > GAME_HEIGHT - CAT_SIZE / 2) newY = GAME_HEIGHT - CAT_SIZE / 2;
-
-        return { x: newX, y: newY };
-      });
+      switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          moveCat(0, -1);
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          moveCat(0, 1);
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          moveCat(-1, 0);
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          moveCat(1, 0);
+          break;
+        default:
+          break;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [screen]);
+  }, [screen, moveCat]);
 
   useEffect(() => {
     if (screen !== 'game') return;
@@ -314,10 +318,13 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            <MovePad onMove={moveCat} />
           </div>
 
           <p className="instructions">
-            Dùng <b>W, A, S, D</b> để di chuyển mèo. Hoàn thành <b>5 nhiệm vụ</b> để mở hộp quà bất ngờ!
+            Dùng <b>W, A, S, D</b> hoặc <b>phím mũi tên</b> bên dưới để di chuyển mèo. Hoàn thành{' '}
+            <b>5 nhiệm vụ</b> để mở hộp quà bất ngờ!
           </p>
         </div>
     </div>

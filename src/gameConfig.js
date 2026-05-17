@@ -61,11 +61,16 @@ export function getGiftPageTitle(date) {
   return `Ngày ${date} bạn sẽ nhận được một người bạn nhỏ để trò chuyện vào dịp này. Đây là món bất ngờ của Leora tặng bạn. Trân trọng!`;
 }
 
-export const DRINKS = [
-  { id: 'matcha', name: 'Matcha Latte', emoji: '🍵', desc: 'Thanh mát, béo nhẹ' },
-  { id: 'latte', name: 'Latte', emoji: '☕', desc: 'Sữa nóng, thơm cà phê' },
-  { id: 'peach_tea', name: 'Trà đào', emoji: '🍑', desc: 'Ngọt thanh, mát lạnh' },
-  { id: 'milk_tea', name: 'Trà sữa truyền thống', emoji: '🧋', desc: 'Đậm trà, béo sữa' },
+export const GIFTS = [
+  { id: 'cake', name: 'Bánh kem', desc: 'Ngọt ngào, tan chảy trong miệng' },
+  { id: 'juice', name: 'Nước trái cây', desc: 'Mát lạnh, đầy vitamin' },
+  { id: 'teddy', name: 'Gấu bông', desc: 'Ôm ấm, dễ thương không lối thoát' },
+  {
+    id: 'mystery',
+    name: 'Phần quà bí ẩn',
+    desc: 'Được gửi từ tương lai vào dịp đặc biệt',
+    textOnly: true,
+  },
 ];
 
 export function pickRandomNeed(excludeZoneId = null) {
